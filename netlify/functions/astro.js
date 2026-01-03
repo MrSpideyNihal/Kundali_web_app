@@ -15,7 +15,7 @@ const PLANETS = {
     Mars: 4,
     Jupiter: 5,
     Saturn: 6,
-    Rahu: 11, // SE_TRUE_NODE (True Node)
+    Rahu: 10, // SE_MEAN_NODE (Mean Node - AstroSage uses this)
     Ketu: 'Opposite'
 };
 
