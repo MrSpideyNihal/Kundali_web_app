@@ -2,190 +2,170 @@ import React from 'react';
 import { PLANETS_HINDI, SIGNS_HINDI } from '../utils/hindi';
 
 /**
- * North Indian Diamond Chart Component
- * Matches AstroSage's standard North Indian Kundali layout
+ * North Indian Diamond Chart - Exact AstroSage Style
  */
 export default function NorthIndianChart({ planets, lagna, useHindi = true }) {
-    // Calculate house positions based on Lagna
     const lagnaSign = Math.floor(lagna / 30);
 
-    // Sign names for display
-    const SIGN_ABBREV = ['Ar', 'Ta', 'Ge', 'Ca', 'Le', 'Vi', 'Li', 'Sc', 'Sg', 'Cp', 'Aq', 'Pi'];
-    const SIGN_ABBREV_HI = ['मे', 'वृ', 'मि', 'क', 'सिं', 'क', 'तु', 'वृ', 'ध', 'म', 'कुं', 'मी'];
-
-    // Get planets in each house (1-12)
+    // Get planets in each house (0-11)
     const houses = Array(12).fill(null).map(() => []);
 
     for (const [planetName, data] of Object.entries(planets)) {
         const planetSign = Math.floor(data.longitude / 30);
-        const houseNum = ((planetSign - lagnaSign + 12) % 12); // 0-indexed house
+        const houseNum = ((planetSign - lagnaSign + 12) % 12);
         const degree = Math.floor(data.longitude % 30);
         houses[houseNum].push({
             name: planetName,
-            nameHindi: PLANETS_HINDI[planetName],
-            abbrev: planetName.substring(0, 2),
+            abbrev: getAbbrev(planetName),
             degree: degree,
-            isRetro: data.isRetrograde
+            isRetro: data.isRetrograde || data.speed < 0
         });
     }
 
-    // SVG dimensions
-    const size = 400;
-    const center = size / 2;
-    const outerOffset = 10;
+    function getAbbrev(name) {
+        const map = {
+            'Sun': 'Su', 'Moon': 'Mo', 'Mars': 'Ma', 'Mercury': 'Me',
+            'Jupiter': 'Ju', 'Venus': 'Ve', 'Saturn': 'Sa',
+            'Rahu': 'Ra', 'Ketu': 'Ke', 'Uranus': 'Ur',
+            'Neptune': 'Ne', 'Pluto': 'Pl'
+        };
+        return map[name] || name.substring(0, 2);
+    }
 
-    // North Indian chart layout - diamond shape
-    // House positions in the diamond (matching AstroSage style)
-    // The diamond has 12 triangular sections
+    function getColor(name) {
+        const colors = {
+            'Sun': '#cc0000', 'Moon': '#008800', 'Mars': '#cc0000',
+            'Mercury': '#008800', 'Jupiter': '#cc6600', 'Venus': '#9900cc',
+            'Saturn': '#000099', 'Rahu': '#990000', 'Ketu': '#990099',
+            'Uranus': '#009999', 'Neptune': '#0066cc', 'Pluto': '#660066'
+        };
+        return colors[name] || '#000000';
+    }
 
-    // Coordinates for the diamond corners
-    const top = { x: center, y: outerOffset };
-    const right = { x: size - outerOffset, y: center };
-    const bottom = { x: center, y: size - outerOffset };
-    const left = { x: outerOffset, y: center };
+    // Chart size
+    const size = 320;
+    const mid = size / 2;
+    const margin = 5;
 
-    // House layout positions (center points for placing planets)
-    // North Indian style: House 1 is at top center
-    const housePositions = [
-        { x: center, y: 70 },           // House 1 (Lagna) - top center
-        { x: center + 70, y: 70 },      // House 2 - top right
-        { x: center + 110, y: center - 50 }, // House 3 - right upper
-        { x: center + 110, y: center + 50 }, // House 4 - right lower
-        { x: center + 70, y: size - 70 },    // House 5 - bottom right
-        { x: center, y: size - 70 },         // House 6 - bottom center
-        { x: center - 70, y: size - 70 },    // House 7 - bottom left
-        { x: center - 110, y: center + 50 }, // House 8 - left lower
-        { x: center - 110, y: center - 50 }, // House 9 - left upper
-        { x: center - 70, y: 70 },           // House 10 - top left
-        { x: center - 35, y: center - 35 },  // House 11 - inner left
-        { x: center + 35, y: center - 35 }   // House 12 - inner right
+    // Diamond corners
+    const top = { x: mid, y: margin };
+    const right = { x: size - margin, y: mid };
+    const bottom = { x: mid, y: size - margin };
+    const left = { x: margin, y: mid };
+
+    // Inner diamond (center)
+    const innerSize = 80;
+    const innerTop = { x: mid, y: mid - innerSize };
+    const innerRight = { x: mid + innerSize, y: mid };
+    const innerBottom = { x: mid, y: mid + innerSize };
+    const innerLeft = { x: mid - innerSize, y: mid };
+
+    // House positions for planets - AstroSage exact layout
+    // House 1 = top center triangle (Lagna position)
+    const houseAreas = [
+        { x: mid, y: 55, house: 1 },           // House 1 - top center
+        { x: mid + 75, y: 55, house: 2 },      // House 2 - top right
+        { x: size - 45, y: mid - 55, house: 3 }, // House 3 - right top
+        { x: size - 45, y: mid + 55, house: 4 }, // House 4 - right bottom
+        { x: mid + 75, y: size - 55, house: 5 }, // House 5 - bottom right
+        { x: mid, y: size - 55, house: 6 },      // House 6 - bottom center
+        { x: mid - 75, y: size - 55, house: 7 }, // House 7 - bottom left
+        { x: 45, y: mid + 55, house: 8 },        // House 8 - left bottom
+        { x: 45, y: mid - 55, house: 9 },        // House 9 - left top
+        { x: mid - 75, y: 55, house: 10 },       // House 10 - top left
+        { x: mid - 40, y: mid - 40, house: 11 }, // House 11 - inner top left
+        { x: mid + 40, y: mid - 40, house: 12 }  // House 12 - inner top right
     ];
 
-    // House numbers to display
+    // House number positions (small numbers in corners)
     const houseNumbers = [
-        { x: center, y: 40, num: 1 },
-        { x: center + 85, y: 55, num: 2 },
-        { x: size - 45, y: center - 60, num: 3 },
-        { x: size - 45, y: center + 60, num: 4 },
-        { x: center + 85, y: size - 45, num: 5 },
-        { x: center, y: size - 30, num: 6 },
-        { x: center - 85, y: size - 45, num: 7 },
-        { x: 45, y: center + 60, num: 8 },
-        { x: 45, y: center - 60, num: 9 },
-        { x: center - 85, y: 55, num: 10 },
-        { x: center - 50, y: center - 20, num: 11 },
-        { x: center + 50, y: center - 20, num: 12 }
+        { x: mid, y: 25, n: 1 },
+        { x: mid + 85, y: 40, n: 2 },
+        { x: size - 25, y: mid - 75, n: 3 },
+        { x: size - 25, y: mid + 75, n: 4 },
+        { x: mid + 85, y: size - 30, n: 5 },
+        { x: mid, y: size - 15, n: 6 },
+        { x: mid - 85, y: size - 30, n: 7 },
+        { x: 25, y: mid + 75, n: 8 },
+        { x: 25, y: mid - 75, n: 9 },
+        { x: mid - 85, y: 40, n: 10 },
+        { x: mid - 55, y: mid - 10, n: 11 },
+        { x: mid + 55, y: mid - 10, n: 12 }
     ];
 
     return (
         <div className="kundali-card">
-            <h3 className="text-xl font-semibold text-center mb-4">
-                {useHindi ? 'लग्न कुंडली' : 'Lagna Chart'}
+            <h3 className="text-lg font-semibold text-center mb-3" style={{ color: '#E07020' }}>
+                Lagna Chart
             </h3>
 
             <svg width={size} height={size} className="mx-auto" style={{ background: '#fff' }}>
-                {/* Outer diamond border */}
+                {/* Outer diamond */}
                 <polygon
                     points={`${top.x},${top.y} ${right.x},${right.y} ${bottom.x},${bottom.y} ${left.x},${left.y}`}
                     fill="none"
-                    stroke="#E07328"
+                    stroke="#E07020"
                     strokeWidth="2"
                 />
 
-                {/* Inner lines forming the 12 houses */}
-                {/* Vertical center line */}
-                <line x1={top.x} y1={top.y} x2={bottom.x} y2={bottom.y} stroke="#E07328" strokeWidth="1" />
-                {/* Horizontal center line */}
-                <line x1={left.x} y1={left.y} x2={right.x} y2={right.y} stroke="#E07328" strokeWidth="1" />
+                {/* Cross lines through center */}
+                <line x1={top.x} y1={top.y} x2={bottom.x} y2={bottom.y} stroke="#E07020" strokeWidth="1" />
+                <line x1={left.x} y1={left.y} x2={right.x} y2={right.y} stroke="#E07020" strokeWidth="1" />
 
-                {/* Diagonal lines from corners to center */}
-                <line x1={top.x} y1={top.y} x2={left.x} y2={left.y} stroke="#E07328" strokeWidth="1" />
-                <line x1={top.x} y1={top.y} x2={right.x} y2={right.y} stroke="#E07328" strokeWidth="1" />
-                <line x1={bottom.x} y1={bottom.y} x2={left.x} y2={left.y} stroke="#E07328" strokeWidth="1" />
-                <line x1={bottom.x} y1={bottom.y} x2={right.x} y2={right.y} stroke="#E07328" strokeWidth="1" />
+                {/* Corner to center lines */}
+                <line x1={top.x} y1={top.y} x2={left.x} y2={left.y} stroke="#E07020" strokeWidth="1" />
+                <line x1={top.x} y1={top.y} x2={right.x} y2={right.y} stroke="#E07020" strokeWidth="1" />
+                <line x1={bottom.x} y1={bottom.y} x2={left.x} y2={left.y} stroke="#E07020" strokeWidth="1" />
+                <line x1={bottom.x} y1={bottom.y} x2={right.x} y2={right.y} stroke="#E07020" strokeWidth="1" />
 
                 {/* Inner diamond */}
                 <polygon
-                    points={`${center},${center - 80} ${center + 80},${center} ${center},${center + 80} ${center - 80},${center}`}
+                    points={`${innerTop.x},${innerTop.y} ${innerRight.x},${innerRight.y} ${innerBottom.x},${innerBottom.y} ${innerLeft.x},${innerLeft.y}`}
                     fill="none"
-                    stroke="#E07328"
+                    stroke="#E07020"
                     strokeWidth="1"
                 />
 
-                {/* House numbers */}
+                {/* House numbers in small gray text */}
                 {houseNumbers.map((h, i) => (
                     <text
-                        key={`hnum-${i}`}
+                        key={`num-${i}`}
                         x={h.x}
                         y={h.y}
                         fontSize="10"
-                        fill="#888"
+                        fill="#999"
                         textAnchor="middle"
+                        fontFamily="Arial, sans-serif"
                     >
-                        {h.num}
+                        {h.n}
                     </text>
                 ))}
 
-                {/* Planets in houses */}
-                {housePositions.map((pos, houseIdx) => {
+                {/* Planets in each house */}
+                {houseAreas.map((area, houseIdx) => {
                     const planetsInHouse = houses[houseIdx];
                     return (
-                        <g key={`house-${houseIdx}`}>
-                            {planetsInHouse.map((planet, pIndex) => {
-                                // Color coding like AstroSage
-                                let color = '#1a1a1a';
-                                if (planet.name === 'Sun') color = '#cc0000';
-                                else if (planet.name === 'Moon') color = '#006600';
-                                else if (planet.name === 'Mars') color = '#cc0000';
-                                else if (planet.name === 'Mercury') color = '#008800';
-                                else if (planet.name === 'Jupiter') color = '#cc6600';
-                                else if (planet.name === 'Venus') color = '#6600cc';
-                                else if (planet.name === 'Saturn') color = '#000066';
-                                else if (planet.name === 'Rahu') color = '#660000';
-                                else if (planet.name === 'Ketu') color = '#660066';
-
-                                return (
-                                    <text
-                                        key={`${houseIdx}-${pIndex}`}
-                                        x={pos.x}
-                                        y={pos.y + (pIndex * 14)}
-                                        fontSize="11"
-                                        fill={color}
-                                        textAnchor="middle"
-                                        fontWeight="bold"
-                                    >
-                                        {useHindi ? planet.nameHindi : planet.abbrev}
-                                        <tspan fontSize="8" baselineShift="super">
-                                            {planet.degree}
-                                        </tspan>
-                                        {planet.isRetro && <tspan fill="#cc0000">*</tspan>}
-                                    </text>
-                                );
-                            })}
+                        <g key={`h-${houseIdx}`}>
+                            {planetsInHouse.map((planet, pIdx) => (
+                                <text
+                                    key={`p-${houseIdx}-${pIdx}`}
+                                    x={area.x}
+                                    y={area.y + (pIdx * 14)}
+                                    fontSize="12"
+                                    fontWeight="bold"
+                                    fill={getColor(planet.name)}
+                                    textAnchor="middle"
+                                    fontFamily="Arial, sans-serif"
+                                >
+                                    {planet.abbrev}
+                                    {planet.isRetro && <tspan fill="#cc0000">*</tspan>}
+                                    <tspan fontSize="8" dy="-4">{planet.degree.toString().padStart(2, '0')}</tspan>
+                                </text>
+                            ))}
                         </g>
                     );
                 })}
-
-                {/* Lagna indicator */}
-                <text
-                    x={center}
-                    y={center}
-                    fontSize="12"
-                    fill="#cc0000"
-                    textAnchor="middle"
-                    fontWeight="bold"
-                >
-                    {useHindi ? 'लग्न' : 'ASC'}
-                </text>
             </svg>
-
-            <div className="mt-4 text-center text-sm text-gray-700">
-                <p>
-                    <strong>{useHindi ? 'लग्न' : 'Ascendant'}:</strong>{' '}
-                    {useHindi ? Object.values(SIGNS_HINDI)[lagnaSign] : SIGN_ABBREV[lagnaSign]}{' '}
-                    {Math.floor(lagna % 30)}° {Math.floor((lagna % 1) * 60)}'
-                </p>
-            </div>
         </div>
     );
 }
