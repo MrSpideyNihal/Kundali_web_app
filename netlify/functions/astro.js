@@ -1,7 +1,6 @@
 
 import SwissEph from 'swisseph-wasm';
 import { DateTime } from 'luxon';
-import tzlookup from 'tz-lookup';
 
 const swe = new SwissEph();
 let initialized = false;
@@ -51,16 +50,12 @@ export const handler = async (req, context) => {
     try {
         if (!initialized) {
             await swe.initSwissEph();
-            // Set Sidereal Mode Globally? or per call?
-            // swisseph is stateful? Yes unless init is per instance.
-            // It is safer to set mode before calc.
             initialized = true;
         }
 
         const start = Date.now();
         const body = JSON.parse(req.body || '{}');
-        const { date, time, latitude, longitude } = body;
-        let { timezone } = body;
+        const { date, time, latitude, longitude, timezone } = body;
 
         if (!date || !time || latitude === undefined || longitude === undefined) {
             return {
@@ -69,19 +64,11 @@ export const handler = async (req, context) => {
             };
         }
 
-        // Auto-detect timezone if not provided
-        if (!timezone) {
-            try {
-                timezone = tzlookup(latitude, longitude);
-                console.log(`Detected Timezone for ${latitude},${longitude}: ${timezone}`);
-            } catch (e) {
-                console.error("Timezone lookup failed:", e);
-                timezone = 'UTC'; // Fallback
-            }
-        }
+        // Use provided timezone or default to UTC
+        const tz = timezone || 'UTC';
 
         // 1. Julian Day (UT)
-        const dt = DateTime.fromISO(`${date}T${time}`, { zone: timezone });
+        const dt = DateTime.fromISO(`${date}T${time}`, { zone: tz });
         const utc = dt.toUTC();
         const jd_ut = swe.julday(utc.year, utc.month, utc.day, utc.hour + utc.minute / 60 + utc.second / 3600, swe.SE_GREG_CAL);
 

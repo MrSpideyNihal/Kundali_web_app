@@ -11,8 +11,8 @@ async function test() {
             date: '2000-01-01',
             time: '12:00:00',
             latitude: 28.6139,
-            longitude: 77.2090
-            // timezone: 'Asia/Kolkata' // Omitted to test auto-detection
+            longitude: 77.2090,
+            timezone: 'Asia/Kolkata'
         })
     };
 
