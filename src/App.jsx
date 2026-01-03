@@ -4,12 +4,8 @@ import NorthIndianChart from './components/NorthIndianChart';
 import PlanetaryPositions from './components/PlanetaryPositions';
 import DashaTable from './components/DashaTable';
 import {
-    getJulianDay,
-    convertToUTC,
-    getPlanetaryPositions,
-    getLahiriAyanamsa,
-    convertToSidereal,
-    getSiderealLagna
+    getChartData,
+    getTimezoneFromCoordinates
 } from './utils/astronomy';
 import { generateDashaTimeline } from './utils/dasha';
 import './index.css';
@@ -58,57 +54,46 @@ function App() {
             // 1. Geocode city
             const { latitude, longitude, displayName } = await geocodeCity(formData.birthPlace);
 
-            // 2. Parse date and time
-            const [year, month, day] = formData.birthDate.split('-').map(Number);
-            const [hour, minute, second = 0] = formData.birthTime.split(':').map(Number);
+            // 2. Determine Timezone (Client-side approximation or Input)
+            // Ideally should be accurate. For now using basic mapping.
+            const timezone = getTimezoneFromCoordinates(latitude, longitude);
 
-            // 3. Convert to UTC
-            const localDateTime = `${formData.birthDate} ${formData.birthTime}:00`;
-            const utcData = convertToUTC(localDateTime, latitude, longitude);
+            // 3. Call Backend API
+            const chartData = await getChartData({
+                birthDate: formData.birthDate,
+                birthTime: formData.birthTime,
+                latitude,
+                longitude,
+                timezone
+            });
 
-            // 4. Calculate Julian Day
-            const jd = getJulianDay(
-                utcData.year,
-                utcData.month,
-                utcData.day,
-                utcData.hour,
-                utcData.minute,
-                utcData.second
-            );
-
-            // 5. Get planetary positions (tropical)
-            const tropicalPlanets = getPlanetaryPositions(jd);
-
-            // 6. Get Lahiri Ayanamsa
-            const ayanamsa = getLahiriAyanamsa(jd);
-
-            // 7. Convert to sidereal
-            const siderealPlanets = convertToSidereal(tropicalPlanets, ayanamsa);
-
-            // 8. Calculate Lagna
-            const lagna = getSiderealLagna(jd, latitude, longitude);
-
-            // 9. Calculate Dasha timeline
+            // 4. Calculate Dasha timeline (Client-side using precise Moon long)
+            // Parse date for balance calculation
+            const localDateTime = `${formData.birthDate} ${formData.birthTime}`;
+            const dt = new Date(localDateTime); // This might be local browser time, but Dasha needs simple Gregorian Date + Moon Long.
+            // Better: use Luxon or just pass the date string to Dasha engine if it supports it.
+            // generateDashaTimeline expectation: (moonLong, birthDate, years)
             const dashaTimeline = generateDashaTimeline(
-                siderealPlanets.Moon.longitude,
-                new Date(utcData.utcDate),
+                chartData.planets.Moon.longitude,
+                dt,
                 120
             );
 
-            // 10. Prepare kundali data
+            // 5. Prepare kundali data
             const kundali = {
                 name: formData.name || 'N/A',
-                birthDate: new Date(year, month - 1, day),
+                birthDate: new Date(formData.birthDate), // For display
                 birthTime: formData.birthTime,
                 birthPlace: displayName,
                 latitude,
                 longitude,
-                timezone: utcData.timezone,
-                ayanamsa,
-                planets: siderealPlanets,
-                lagna,
+                timezone,
+                ayanamsa: chartData.ayanamsa,
+                planets: chartData.planets,
+                lagna: chartData.lagna,
+                d9: chartData.d9, // New D9 data
                 dashaTimeline,
-                julianDay: jd
+                julianDay: chartData.jd
             };
 
             setKundaliData(kundali);

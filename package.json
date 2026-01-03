@@ -22,9 +22,12 @@
   "homepage": "https://github.com/MrSpideyNihal/Kundali_web_app#readme",
   "dependencies": {
     "astronomia": "^4.2.0",
+    "luxon": "^3.7.2",
     "moment-timezone": "^0.6.0",
     "react": "^19.2.3",
-    "react-dom": "^19.2.3"
+    "react-dom": "^19.2.3",
+    "swisseph-wasm": "^0.0.2",
+    "tz-lookup": "^6.1.25"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.1.2",
